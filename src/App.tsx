@@ -6,6 +6,8 @@ import { ToastProvider } from './context/ToastContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './pages/LoginPage';
 import { RoleDashboard } from './pages/RoleDashboard';
+import { UserRole } from './types';
+import { getWorkspaceHome } from './services/navigation';
 
 // JALIN-PETA
 import { SchoolList } from './modules/peta/SchoolList';
@@ -36,14 +38,25 @@ import { HubDashboard } from './modules/hub/HubDashboard';
 import { OfflineLibrary } from './modules/hub/OfflineLibrary';
 import { SyncCenter } from './modules/hub/SyncCenter';
 
+// WORKSPACE PAGES
+import { DinasLaporan } from './workspaces/dinas/DinasLaporan';
+import { DinasKolaborasi } from './workspaces/dinas/DinasKolaborasi';
+import { KepsekGuruKelas } from './workspaces/kepsek/KepsekGuruKelas';
+import { KepsekPerkembanganSiswa } from './workspaces/kepsek/KepsekPerkembanganSiswa';
+import { KepsekPelaksanaan } from './workspaces/kepsek/KepsekPelaksanaan';
+import { KepsekEvaluasi } from './workspaces/kepsek/KepsekEvaluasi';
+import { KoordinatorKelasSiswa } from './workspaces/koordinator/KoordinatorKelasSiswa';
+import { KoordinatorJadwalAsesmen } from './workspaces/koordinator/KoordinatorJadwalAsesmen';
+import { GuruKelasSaya } from './workspaces/guru/GuruKelasSaya';
+
 // Protected Route Guard
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, isLoading } = useAuth();
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 text-sm">
-        Memuat data JALIN BELAJAR...
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 text-sm font-sans">
+        Memuat ruang kerja JALIN BELAJAR...
       </div>
     );
   }
@@ -55,13 +68,21 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <>{children}</>;
 };
 
-// Siswa Restriction Guard: Prevents Siswa from accessing teacher/admin dashboards
-const RestrictedForSiswa: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { role } = useAuth();
-  if (role === 'siswa') {
-    return <Navigate to="/dashboard" replace />;
+// Workspace Role Guard: Enforces strict Role-Based Access Control
+const RoleGuard: React.FC<{ allowedRoles: UserRole[]; children: React.ReactNode }> = ({ allowedRoles, children }) => {
+  const { role, currentUser } = useAuth();
+  if (!currentUser) return <Navigate to="/login" replace />;
+  if (role === 'super_admin') return <>{children}</>;
+  if (!role || !allowedRoles.includes(role)) {
+    return <Navigate to={getWorkspaceHome(role)} replace />;
   }
   return <>{children}</>;
+};
+
+// Dynamic Home Redirect based on user's active workspace
+const WorkspaceHomeRedirect: React.FC = () => {
+  const { role } = useAuth();
+  return <Navigate to={getWorkspaceHome(role)} replace />;
 };
 
 export function App() {
@@ -74,7 +95,7 @@ export function App() {
               {/* Public Login */}
               <Route path="/login" element={<LoginPage />} />
 
-              {/* Protected Routes */}
+              {/* Protected Workspace Layout */}
               <Route
                 path="/"
                 element={
@@ -83,112 +104,332 @@ export function App() {
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<RoleDashboard />} />
+                {/* Default Index & Dashboard redirect to user's assigned workspace */}
+                <Route index element={<WorkspaceHomeRedirect />} />
+                <Route path="dashboard" element={<WorkspaceHomeRedirect />} />
 
-                {/* MODUL A: JALIN-PETA (Admin/Guru/Dinas Only) */}
+                {/* ========================================================= */}
+                {/* RUANG A: DINAS PENDIDIKAN */}
+                {/* ========================================================= */}
                 <Route
-                  path="peta/sekolah"
+                  path="dinas/ringkasan"
                   element={
-                    <RestrictedForSiswa>
+                    <RoleGuard allowedRoles={['dinas_pendidikan', 'super_admin']}>
+                      <RoleDashboard />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="dinas/peta-sekolah"
+                  element={
+                    <RoleGuard allowedRoles={['dinas_pendidikan', 'super_admin']}>
                       <SchoolList />
-                    </RestrictedForSiswa>
+                    </RoleGuard>
                   }
                 />
                 <Route
-                  path="peta/sekolah/:id"
+                  path="dinas/peta-sekolah/:id"
                   element={
-                    <RestrictedForSiswa>
+                    <RoleGuard allowedRoles={['dinas_pendidikan', 'super_admin']}>
                       <SchoolDetail />
-                    </RestrictedForSiswa>
+                    </RoleGuard>
                   }
                 />
                 <Route
-                  path="peta/infrastruktur"
+                  path="dinas/prioritas"
                   element={
-                    <RestrictedForSiswa>
+                    <RoleGuard allowedRoles={['dinas_pendidikan', 'super_admin']}>
                       <InfrastructureMap />
-                    </RestrictedForSiswa>
+                    </RoleGuard>
                   }
                 />
                 <Route
-                  path="peta/capaian"
+                  path="dinas/evaluasi"
                   element={
-                    <RestrictedForSiswa>
+                    <RoleGuard allowedRoles={['dinas_pendidikan', 'super_admin']}>
                       <LiteracyNumeracyMap />
-                    </RestrictedForSiswa>
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="dinas/laporan"
+                  element={
+                    <RoleGuard allowedRoles={['dinas_pendidikan', 'super_admin']}>
+                      <DinasLaporan />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="dinas/kolaborasi"
+                  element={
+                    <RoleGuard allowedRoles={['dinas_pendidikan', 'super_admin']}>
+                      <DinasKolaborasi />
+                    </RoleGuard>
                   }
                 />
 
-                {/* MODUL B: JALIN-TUNTAS */}
-                <Route path="tuntas/dashboard" element={<TuntasDashboard />} />
-                <Route path="tuntas/materi" element={<MaterialList />} />
-                <Route path="tuntas/materi/:id" element={<MaterialDetail />} />
+                {/* ========================================================= */}
+                {/* RUANG B: KEPALA SEKOLAH */}
+                {/* ========================================================= */}
                 <Route
-                  path="tuntas/bank-soal"
+                  path="kepsek/ringkasan"
                   element={
-                    <RestrictedForSiswa>
-                      <QuestionBank />
-                    </RestrictedForSiswa>
+                    <RoleGuard allowedRoles={['kepala_sekolah', 'super_admin']}>
+                      <RoleDashboard />
+                    </RoleGuard>
                   }
                 />
-                <Route path="tuntas/asesmen" element={<AssessmentList />} />
-                <Route path="tuntas/ujian/:id" element={<AssessmentExam />} />
-                <Route path="tuntas/hasil/:id" element={<AssessmentResult />} />
-                <Route path="tuntas/rekomendasi" element={<AdaptiveRecommendations />} />
-                <Route path="tuntas/latihan" element={<PracticeSessionPage />} />
-                <Route path="tuntas/latihan/:competencyId" element={<PracticeSessionPage />} />
-                <Route path="tuntas/progress" element={<CompetencyProgress />} />
+                <Route
+                  path="kepsek/guru-kelas"
+                  element={
+                    <RoleGuard allowedRoles={['kepala_sekolah', 'super_admin']}>
+                      <KepsekGuruKelas />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="kepsek/perkembangan-siswa"
+                  element={
+                    <RoleGuard allowedRoles={['kepala_sekolah', 'super_admin']}>
+                      <KepsekPerkembanganSiswa />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="kepsek/pelaksanaan"
+                  element={
+                    <RoleGuard allowedRoles={['kepala_sekolah', 'super_admin']}>
+                      <KepsekPelaksanaan />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="kepsek/evaluasi"
+                  element={
+                    <RoleGuard allowedRoles={['kepala_sekolah', 'super_admin']}>
+                      <KepsekEvaluasi />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="kepsek/pendampingan"
+                  element={
+                    <RoleGuard allowedRoles={['kepala_sekolah', 'super_admin']}>
+                      <MentoringNotes />
+                    </RoleGuard>
+                  }
+                />
 
-                {/* MODUL C: JALIN-GURU (Guru/Admin/Dinas Only) */}
+                {/* ========================================================= */}
+                {/* RUANG C: GURU KOORDINATOR */}
+                {/* ========================================================= */}
                 <Route
-                  path="guru/dashboard"
+                  path="koordinator/ringkasan"
                   element={
-                    <RestrictedForSiswa>
-                      <GuruDashboard />
-                    </RestrictedForSiswa>
+                    <RoleGuard allowedRoles={['guru_koordinator', 'super_admin']}>
+                      <RoleDashboard />
+                    </RoleGuard>
                   }
                 />
                 <Route
-                  path="guru/panduan"
+                  path="koordinator/kelas-siswa"
                   element={
-                    <RestrictedForSiswa>
+                    <RoleGuard allowedRoles={['guru_koordinator', 'super_admin']}>
+                      <KoordinatorKelasSiswa />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="koordinator/kelola-guru"
+                  element={
+                    <RoleGuard allowedRoles={['guru_koordinator', 'super_admin']}>
+                      <BestPracticesShare />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="koordinator/jadwal-asesmen"
+                  element={
+                    <RoleGuard allowedRoles={['guru_koordinator', 'super_admin']}>
+                      <KoordinatorJadwalAsesmen />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="koordinator/materi"
+                  element={
+                    <RoleGuard allowedRoles={['guru_koordinator', 'super_admin']}>
+                      <MaterialList />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="koordinator/sinkronisasi"
+                  element={
+                    <RoleGuard allowedRoles={['guru_koordinator', 'super_admin']}>
+                      <SyncCenter />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="koordinator/pendampingan"
+                  element={
+                    <RoleGuard allowedRoles={['guru_koordinator', 'super_admin']}>
                       <TeacherGuide />
-                    </RestrictedForSiswa>
+                    </RoleGuard>
+                  }
+                />
+
+                {/* ========================================================= */}
+                {/* RUANG D: GURU PELAKSANA */}
+                {/* ========================================================= */}
+                <Route
+                  path="guru/beranda"
+                  element={
+                    <RoleGuard allowedRoles={['guru', 'guru_koordinator', 'super_admin']}>
+                      <RoleDashboard />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="guru/kelas"
+                  element={
+                    <RoleGuard allowedRoles={['guru', 'guru_koordinator', 'super_admin']}>
+                      <GuruKelasSaya />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="guru/asesmen"
+                  element={
+                    <RoleGuard allowedRoles={['guru', 'guru_koordinator', 'super_admin']}>
+                      <AssessmentList />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="guru/analisis"
+                  element={
+                    <RoleGuard allowedRoles={['guru', 'guru_koordinator', 'super_admin']}>
+                      <AssessmentResult />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="guru/rekomendasi"
+                  element={
+                    <RoleGuard allowedRoles={['guru', 'guru_koordinator', 'super_admin']}>
+                      <AdaptiveRecommendations />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="guru/materi"
+                  element={
+                    <RoleGuard allowedRoles={['guru', 'guru_koordinator', 'super_admin']}>
+                      <MaterialList />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="guru/perkembangan"
+                  element={
+                    <RoleGuard allowedRoles={['guru', 'guru_koordinator', 'super_admin']}>
+                      <CompetencyProgress />
+                    </RoleGuard>
                   }
                 />
                 <Route
                   path="guru/pendampingan"
                   element={
-                    <RestrictedForSiswa>
-                      <MentoringNotes />
-                    </RestrictedForSiswa>
-                  }
-                />
-                <Route
-                  path="guru/praktik-baik"
-                  element={
-                    <RestrictedForSiswa>
-                      <BestPracticesShare />
-                    </RestrictedForSiswa>
+                    <RoleGuard allowedRoles={['guru', 'guru_koordinator', 'super_admin']}>
+                      <TeacherGuide />
+                    </RoleGuard>
                   }
                 />
 
-                {/* MODUL D: JALIN-HUB */}
-                <Route path="hub/dashboard" element={<HubDashboard />} />
-                <Route path="hub/offline" element={<OfflineLibrary />} />
+                {/* ========================================================= */}
+                {/* RUANG E: PESERTA DIDIK (MURID) */}
+                {/* ========================================================= */}
                 <Route
-                  path="hub/sinkronisasi"
+                  path="murid/beranda"
                   element={
-                    <RestrictedForSiswa>
-                      <SyncCenter />
-                    </RestrictedForSiswa>
+                    <RoleGuard allowedRoles={['siswa', 'super_admin']}>
+                      <RoleDashboard />
+                    </RoleGuard>
                   }
                 />
+                <Route
+                  path="murid/materi"
+                  element={
+                    <RoleGuard allowedRoles={['siswa', 'super_admin']}>
+                      <AdaptiveRecommendations />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="murid/asesmen"
+                  element={
+                    <RoleGuard allowedRoles={['siswa', 'super_admin']}>
+                      <AssessmentList />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="murid/latihan"
+                  element={
+                    <RoleGuard allowedRoles={['siswa', 'super_admin']}>
+                      <PracticeSessionPage />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="murid/perkembangan"
+                  element={
+                    <RoleGuard allowedRoles={['siswa', 'super_admin']}>
+                      <CompetencyProgress />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="murid/tersimpan"
+                  element={
+                    <RoleGuard allowedRoles={['siswa', 'super_admin']}>
+                      <OfflineLibrary />
+                    </RoleGuard>
+                  }
+                />
+
+                {/* ========================================================= */}
+                {/* SHARED DIRECT INTERACTIONS (Pengerjaan Asesmen & Detail) */}
+                {/* ========================================================= */}
+                <Route path="tuntas/materi/:id" element={<MaterialDetail />} />
+                <Route path="tuntas/ujian/:id" element={<AssessmentExam />} />
+                <Route path="tuntas/hasil/:id" element={<AssessmentResult />} />
+                <Route path="tuntas/latihan/:competencyId" element={<PracticeSessionPage />} />
+                <Route path="peta/sekolah/:id" element={<SchoolDetail />} />
+
+                {/* BACKWARDS COMPATIBILITY REDIRECTS */}
+                <Route path="peta/sekolah" element={<Navigate to="/dinas/peta-sekolah" replace />} />
+                <Route path="peta/infrastruktur" element={<Navigate to="/dinas/prioritas" replace />} />
+                <Route path="peta/capaian" element={<Navigate to="/dinas/evaluasi" replace />} />
+                <Route path="tuntas/dashboard" element={<Navigate to="/guru/beranda" replace />} />
+                <Route path="tuntas/materi" element={<Navigate to="/guru/materi" replace />} />
+                <Route path="tuntas/bank-soal" element={<Navigate to="/guru/materi" replace />} />
+                <Route path="tuntas/asesmen" element={<Navigate to="/guru/asesmen" replace />} />
+                <Route path="tuntas/rekomendasi" element={<Navigate to="/guru/rekomendasi" replace />} />
+                <Route path="tuntas/latihan" element={<Navigate to="/murid/latihan" replace />} />
+                <Route path="tuntas/progress" element={<Navigate to="/guru/perkembangan" replace />} />
+                <Route path="guru/dashboard" element={<Navigate to="/guru/beranda" replace />} />
+                <Route path="guru/panduan" element={<Navigate to="/guru/pendampingan" replace />} />
+                <Route path="guru/praktik-baik" element={<Navigate to="/guru/pendampingan" replace />} />
+                <Route path="hub/dashboard" element={<Navigate to="/koordinator/sinkronisasi" replace />} />
+                <Route path="hub/offline" element={<Navigate to="/murid/tersimpan" replace />} />
+                <Route path="hub/sinkronisasi" element={<Navigate to="/koordinator/sinkronisasi" replace />} />
               </Route>
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              {/* Universal Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </OfflineProvider>
         </ToastProvider>
@@ -198,4 +439,3 @@ export function App() {
 }
 
 export default App;
-

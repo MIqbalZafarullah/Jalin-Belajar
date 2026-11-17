@@ -26,27 +26,38 @@ export const Card: React.FC<CardProps> = ({
 };
 
 export const CardHeader: React.FC<{
-  title: string | React.ReactNode;
+  title?: string | React.ReactNode;
   subtitle?: string | React.ReactNode;
   action?: React.ReactNode;
   icon?: React.ReactNode;
   className?: string;
-}> = ({ title, subtitle, action, icon, className = '' }) => (
-  <div className={`p-5 sm:p-6 border-b border-slate-100 flex items-start justify-between gap-4 ${className}`}>
-    <div className="flex items-start gap-3">
-      {icon && (
-        <div className="p-2 rounded-lg bg-blue-50 text-blue-600 shrink-0">
-          {icon}
-        </div>
-      )}
-      <div>
-        <h3 className="font-semibold text-slate-900 text-base leading-snug">{title}</h3>
-        {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
+  children?: React.ReactNode;
+}> = ({ title, subtitle, action, icon, className = '', children }) => {
+  if (children) {
+    return (
+      <div className={`p-5 sm:p-6 border-b border-slate-100 ${className}`}>
+        {children}
       </div>
+    );
+  }
+
+  return (
+    <div className={`p-5 sm:p-6 border-b border-slate-100 flex items-start justify-between gap-4 ${className}`}>
+      <div className="flex items-start gap-3">
+        {icon && (
+          <div className="p-2 rounded-lg bg-blue-50 text-blue-600 shrink-0">
+            {icon}
+          </div>
+        )}
+        <div>
+          {title && <h3 className="font-semibold text-slate-900 text-base leading-snug">{title}</h3>}
+          {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
+        </div>
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
     </div>
-    {action && <div className="shrink-0">{action}</div>}
-  </div>
-);
+  );
+};
 
 export const CardBody: React.FC<{
   children: React.ReactNode;
