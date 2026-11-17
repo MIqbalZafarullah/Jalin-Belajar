@@ -28,17 +28,28 @@ export const CompetencyProgress: React.FC = () => {
   const [practices, setPractices] = useState<PracticeSession[]>([]);
   const [competencies, setCompetencies] = useState<Competency[]>([]);
 
+  const isSiswa = role === 'siswa';
+
   useEffect(() => {
     const loadProgress = async () => {
-      const subs = await db.submissions.toArray();
-      const pracs = await db.practiceSessions.toArray();
+      const allSubs = await db.submissions.toArray();
+      const allPracs = await db.practiceSessions.toArray();
       const comps = await db.competencies.toArray();
-      setSubmissions(subs);
-      setPractices(pracs);
+
+      const userSubs = isSiswa && currentUser
+        ? allSubs.filter(s => s.studentId === currentUser.id)
+        : allSubs;
+
+      const userPracs = isSiswa && currentUser
+        ? allPracs.filter(p => p.studentId === currentUser.id)
+        : allPracs;
+
+      setSubmissions(userSubs);
+      setPractices(userPracs);
       setCompetencies(comps);
     };
     loadProgress();
-  }, []);
+  }, [isSiswa, currentUser]);
 
   // Compute progress trajectory data
   const historyData = [

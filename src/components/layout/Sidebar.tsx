@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getWorkspaceConfig } from '../../services/navigation';
+import { Avatar } from '../common/Avatar';
 import { 
   X,
   LogOut,
@@ -83,10 +84,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
         {/* User Card inside Sidebar */}
         <div className="mx-3 mt-2 px-3 py-2 rounded-lg bg-white border border-slate-100 flex items-center gap-2.5 shadow-2xs">
-          <img
-            src={currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80'}
-            alt={currentUser?.name}
-            className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200"
+          <Avatar
+            name={currentUser?.name}
+            src={currentUser?.avatar}
+            size="xs"
           />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-slate-900 truncate">{currentUser?.name}</p>

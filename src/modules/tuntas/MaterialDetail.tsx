@@ -7,6 +7,7 @@ import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { useOffline } from '../../context/OfflineContext';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { 
   ArrowLeft, 
   DownloadCloud, 
@@ -31,6 +32,7 @@ export const MaterialDetail: React.FC = () => {
   const [competency, setCompetency] = useState<Competency | null>(null);
   const { addToSyncQueue } = useOffline();
   const { showToast } = useToast();
+  const { role } = useAuth();
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   useEffect(() => {
@@ -61,8 +63,8 @@ export const MaterialDetail: React.FC = () => {
         <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
         <h2 className="text-lg font-bold text-slate-800">Materi Tidak Ditemukan</h2>
         <p className="text-xs text-slate-500 mt-1">Materi pembelajaran yang Anda cari mungkin telah dihapus atau ID tidak valid.</p>
-        <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate('/tuntas/materi')}>
-          Kembali ke Bank Materi
+        <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate(role === 'siswa' ? '/murid/materi' : '/guru/materi')}>
+          Kembali ke Modul Materi
         </Button>
       </div>
     );
@@ -124,11 +126,11 @@ export const MaterialDetail: React.FC = () => {
       {/* Breadcrumb: Bank Materi > Judul Materi */}
       <nav className="flex items-center gap-2 text-xs text-slate-500">
         <button 
-          onClick={() => navigate('/tuntas/materi')}
+          onClick={() => navigate(role === 'siswa' ? '/murid/materi' : '/guru/materi')}
           className="hover:text-blue-600 transition-colors flex items-center gap-1 font-medium"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Bank Materi
+          {role === 'siswa' ? 'Materi Saya' : 'Katalog Materi'}
         </button>
         <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
         <span className="text-slate-800 font-semibold truncate max-w-xs sm:max-w-md">

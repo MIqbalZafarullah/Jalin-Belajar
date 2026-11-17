@@ -47,7 +47,9 @@ import { KepsekPelaksanaan } from './workspaces/kepsek/KepsekPelaksanaan';
 import { KepsekEvaluasi } from './workspaces/kepsek/KepsekEvaluasi';
 import { KoordinatorKelasSiswa } from './workspaces/koordinator/KoordinatorKelasSiswa';
 import { KoordinatorJadwalAsesmen } from './workspaces/koordinator/KoordinatorJadwalAsesmen';
+import { KoordinatorKelolaGuru } from './workspaces/koordinator/KoordinatorKelolaGuru';
 import { GuruKelasSaya } from './workspaces/guru/GuruKelasSaya';
+import { GuruAnalisisHasil } from './workspaces/guru/GuruAnalisisHasil';
 
 // Protected Route Guard
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -243,7 +245,7 @@ export function App() {
                   path="koordinator/kelola-guru"
                   element={
                     <RoleGuard allowedRoles={['guru_koordinator', 'super_admin']}>
-                      <BestPracticesShare />
+                      <KoordinatorKelolaGuru />
                     </RoleGuard>
                   }
                 />
@@ -311,7 +313,7 @@ export function App() {
                   path="guru/analisis"
                   element={
                     <RoleGuard allowedRoles={['guru', 'guru_koordinator', 'super_admin']}>
-                      <AssessmentResult />
+                      <GuruAnalisisHasil />
                     </RoleGuard>
                   }
                 />

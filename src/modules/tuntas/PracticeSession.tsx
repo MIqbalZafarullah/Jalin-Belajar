@@ -124,7 +124,7 @@ export const PracticeSessionPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate('/tuntas/rekomendasi')}
+              onClick={() => navigate(currentUser?.role === 'siswa' ? '/murid/materi' : '/guru/rekomendasi')}
             >
               Rekomendasi Lain
             </Button>
@@ -132,7 +132,7 @@ export const PracticeSessionPage: React.FC = () => {
               variant="primary"
               size="sm"
               className="bg-blue-600 hover:bg-blue-700"
-              onClick={() => navigate('/tuntas/progress')}
+              onClick={() => navigate(currentUser?.role === 'siswa' ? '/murid/perkembangan' : '/guru/perkembangan')}
             >
               Lihat Progres Belajar
             </Button>

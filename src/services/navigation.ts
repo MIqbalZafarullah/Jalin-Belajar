@@ -150,7 +150,10 @@ export function isPathAllowedForRole(path: string, role: UserRole | null): boole
   if (!role) return false;
   if (role === 'super_admin') return true;
 
-  // Prefix check
+  // Exact home & dashboard redirects
+  if (path === '/' || path === '/dashboard') return true;
+
+  // Prefix check per workspace
   if (path.startsWith('/dinas')) {
     return role === 'dinas_pendidikan';
   }
@@ -167,14 +170,20 @@ export function isPathAllowedForRole(path: string, role: UserRole | null): boole
     return role === 'siswa';
   }
 
-  // Common shared subroutes (exam taking, material details)
-  if (path.startsWith('/tuntas/ujian') || path.startsWith('/tuntas/hasil')) {
+  // Common shared subroutes (exam taking, material details, practice)
+  if (
+    path.startsWith('/tuntas/ujian') || 
+    path.startsWith('/tuntas/hasil') || 
+    path.startsWith('/tuntas/materi/') || 
+    path.startsWith('/tuntas/latihan/')
+  ) {
     return true;
   }
-  if (path.startsWith('/tuntas/materi/')) {
-    return true;
+  if (path.startsWith('/peta/sekolah/')) {
+    return role === 'dinas_pendidikan' || role === 'kepala_sekolah' || role === 'guru_koordinator';
   }
 
-  return true;
+  // Strict default: Disallow unknown or legacy unmapped routes
+  return false;
 }
 

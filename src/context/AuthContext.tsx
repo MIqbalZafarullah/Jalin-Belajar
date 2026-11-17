@@ -7,7 +7,7 @@ interface AuthContextType {
   currentUser: User | null;
   role: UserRole | null;
   loginAs: (role: UserRole) => Promise<void>;
-  loginWithUsername: (username: string) => Promise<boolean>;
+  loginWithUsername: (username: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   allUsers: User[];
   isLoading: boolean;
@@ -31,26 +31,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setAllUsers(usersFromDb);
         }
         
+        // Check saved session in localStorage
         const savedUserId = localStorage.getItem(AUTH_STORAGE_KEY);
         if (savedUserId) {
-          const found = usersFromDb.find(u => u.id === savedUserId);
+          const found = (usersFromDb.length > 0 ? usersFromDb : INITIAL_USERS).find(u => u.id === savedUserId);
           if (found) {
             setCurrentUser(found);
           } else {
-            // Default to Guru if none found
-            setCurrentUser(usersFromDb.find(u => u.role === 'guru') || usersFromDb[0]);
+            setCurrentUser(null);
           }
         } else {
-          // Default to Guru for initial demonstration
-          const defaultUser = usersFromDb.find(u => u.role === 'guru') || usersFromDb[0];
-          setCurrentUser(defaultUser);
-          if (defaultUser) {
-            localStorage.setItem(AUTH_STORAGE_KEY, defaultUser.id);
-          }
+          // No auto-login: user must start from LoginPage
+          setCurrentUser(null);
         }
       } catch (err) {
         console.error('Error loading users:', err);
-        setCurrentUser(INITIAL_USERS[4]); // Fallback Siti Rahmawati (Guru)
+        setCurrentUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -67,14 +63,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithUsername = async (username: string): Promise<boolean> => {
-    const targetUser = allUsers.find(u => u.username.toLowerCase() === username.trim().toLowerCase());
-    if (targetUser) {
-      setCurrentUser(targetUser);
-      localStorage.setItem(AUTH_STORAGE_KEY, targetUser.id);
-      return true;
+  const loginWithUsername = async (
+    username: string, 
+    password?: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    const cleanUsername = username.trim().toLowerCase();
+    const targetUser = allUsers.find(u => u.username.toLowerCase() === cleanUsername);
+
+    if (!targetUser) {
+      return { 
+        success: false, 
+        error: `Nama pengguna "${username}" tidak terdaftar dalam basis data simulasi.` 
+      };
     }
-    return false;
+
+    // Password validation: demo accounts accept 'demo123' or '<username>123'
+    if (password !== undefined) {
+      const validPasswords = ['demo123', `${cleanUsername}123`, 'admin123', 'jalin2026'];
+      if (!validPasswords.includes(password.trim())) {
+        return {
+          success: false,
+          error: 'Kata sandi tidak sesuai. Gunakan kata sandi demo: "demo123".'
+        };
+      }
+    }
+
+    setCurrentUser(targetUser);
+    localStorage.setItem(AUTH_STORAGE_KEY, targetUser.id);
+    return { success: true };
   };
 
   const logout = () => {

@@ -237,7 +237,7 @@ export const AssessmentExam: React.FC = () => {
             <button
               onClick={() => {
                 if (window.confirm('Apakah Anda yakin ingin keluar dari lembar ujian? Progres saat ini belum tersimpan.')) {
-                  navigate('/tuntas/asesmen');
+                  navigate(currentUser?.role === 'siswa' ? '/murid/asesmen' : '/guru/asesmen');
                 }
               }}
               className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"

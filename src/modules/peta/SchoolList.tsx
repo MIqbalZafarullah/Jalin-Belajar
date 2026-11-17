@@ -134,7 +134,12 @@ export const SchoolList: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Pemetaan Sekolah — Kabupaten Mukomuko</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-slate-900">Pemetaan Sekolah — Kabupaten Mukomuko</h1>
+              <span className="text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                Data Simulasi
+              </span>
+            </div>
             <p className="text-sm text-slate-500 mt-1">
               Direktori satuan pendidikan dasar, status jaringan 3T, serta profil kesiapan fasilitas pembelajaran.
             </p>

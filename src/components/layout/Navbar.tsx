@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { SyncIndicator } from '../common/SyncIndicator';
 import { RoleSwitcher } from '../common/RoleSwitcher';
+import { Avatar } from '../common/Avatar';
 import { 
   Menu, 
   MapPin, 
@@ -61,10 +62,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
           {/* User Profile Avatar & Logout */}
           <div className="flex items-center gap-2 border-l border-slate-200 pl-3">
             <div className="relative">
-              <img
-                src={currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80'}
-                alt={currentUser?.name}
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-100"
+              <Avatar
+                name={currentUser?.name}
+                src={currentUser?.avatar}
+                size="sm"
               />
               <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
             </div>

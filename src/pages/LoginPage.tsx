@@ -37,17 +37,21 @@ export const LoginPage: React.FC = () => {
       setErrorMsg('Silakan masukkan nama pengguna.');
       return;
     }
+    if (!passwordInput.trim()) {
+      setErrorMsg('Silakan masukkan kata sandi.');
+      return;
+    }
     setErrorMsg('');
     setIsLoggingIn(true);
-    const success = await loginWithUsername(usernameInput.trim());
+    const result = await loginWithUsername(usernameInput.trim(), passwordInput.trim());
     setIsLoggingIn(false);
-    if (success) {
+    if (result.success) {
       // Find the logged-in user to determine workspace home
       const matched = allUsers.find(u => u.username.toLowerCase() === usernameInput.trim().toLowerCase());
       const destination = getWorkspaceHome(matched ? matched.role : 'guru');
       navigate(destination);
     } else {
-      setErrorMsg('Nama pengguna tidak ditemukan. Gunakan tombol "Masuk sebagai Akun Demo" di bawah.');
+      setErrorMsg(result.error || 'Autentikasi gagal. Silakan periksa kredensial.');
     }
   };
 

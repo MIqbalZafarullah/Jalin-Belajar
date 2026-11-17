@@ -15,11 +15,13 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useOffline } from '../../context/OfflineContext';
+import { useAuth } from '../../context/AuthContext';
 
 export const OfflineLibrary: React.FC = () => {
   const [offlineMaterials, setOfflineMaterials] = useState<Material[]>([]);
   const navigate = useNavigate();
   const { isEffectiveOffline, addToSyncQueue } = useOffline();
+  const { role } = useAuth();
 
   const loadOffline = async () => {
     const list = await db.materials.where('isDownloadedOffline').equals(1 as any).toArray();
@@ -94,9 +96,9 @@ export const OfflineLibrary: React.FC = () => {
               variant="primary"
               size="sm"
               className="mt-4"
-              onClick={() => navigate('/tuntas/materi')}
+              onClick={() => navigate(role === 'siswa' ? '/murid/materi' : '/guru/materi')}
             >
-              Ke Bank Materi
+              {role === 'siswa' ? 'Pilih Materi Rekomendasi' : 'Ke Bank Materi'}
             </Button>
           </CardBody>
         </Card>

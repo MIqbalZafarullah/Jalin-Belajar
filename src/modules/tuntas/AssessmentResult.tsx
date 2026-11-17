@@ -24,11 +24,13 @@ import {
 } from 'lucide-react';
 import { PrintDiagnosticReport } from '../../components/common/PrintDiagnosticReport';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 
 export const AssessmentResult: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { role } = useAuth();
 
   const [submission, setSubmission] = useState<AssessmentSubmission | null>(null);
   const [assessment, setAssessment] = useState<Assessment | null>(null);
@@ -144,9 +146,9 @@ export const AssessmentResult: React.FC = () => {
           variant="ghost"
           size="sm"
           icon={<ArrowLeft className="w-4 h-4" />}
-          onClick={() => navigate('/tuntas/asesmen')}
+          onClick={() => navigate(role === 'siswa' ? '/murid/asesmen' : '/guru/analisis')}
         >
-          Kembali ke Daftar Asesmen
+          {role === 'siswa' ? 'Kembali ke Asesmen Saya' : 'Kembali ke Analisis Hasil'}
         </Button>
 
         {/* Print / Share Buttons */}
