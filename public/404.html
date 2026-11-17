@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JALIN BELAJAR — Jejaring Aksi Literasi dan Numerasi Berbasis Data</title>
+    <meta name="description" content="Inovasi Teknologi Pendidikan Berbasis Data untuk Wilayah 3T - Kabupaten Mukomuko" />
+    <link rel="manifest" href="./manifest.json" />
+    <meta name="theme-color" content="#1E40AF" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-slate-50 text-slate-800 antialiased font-sans">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          const swPath = (document.querySelector('base')?.href || window.location.pathname.replace(/\/[^/]*$/, '/')) + 'sw.js';
+          // Unregister old service workers first
+          navigator.serviceWorker.getRegistrations().then(registrations => {
+            registrations.forEach(reg => reg.unregister());
+          }).then(() => {
+            navigator.serviceWorker.register('./sw.js').catch(err => {
+              console.log('SW registration failed:', err);
+            });
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
