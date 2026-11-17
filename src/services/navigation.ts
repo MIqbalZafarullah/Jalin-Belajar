@@ -120,7 +120,7 @@ export const WORKSPACE_CONFIGS: Record<UserRole, WorkspaceConfig> = {
   super_admin: {
     id: 'admin',
     title: 'Ruang Administrator Sistem',
-    subtitle: 'Manajemen Data Teknis Prototipe JALIN BELAJAR',
+    subtitle: 'Manajemen Data dan Konfigurasi Sistem',
     homePath: '/dinas/ringkasan',
     allowedRoles: ['super_admin'],
     navItems: [
@@ -177,3 +177,4 @@ export function isPathAllowedForRole(path: string, role: UserRole | null): boole
 
   return true;
 }
+

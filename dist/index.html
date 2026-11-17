@@ -2,16 +2,16 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/Jalin-Belajar/logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="./logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>JALIN BELAJAR — Jejaring Aksi Literasi dan Numerasi Berbasis Data</title>
     <meta name="description" content="Inovasi Teknologi Pendidikan Berbasis Data untuk Wilayah 3T - Kabupaten Mukomuko" />
-    <link rel="manifest" href="/Jalin-Belajar/manifest.json" />
+    <link rel="manifest" href="./manifest.json" />
     <meta name="theme-color" content="#1E40AF" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/Jalin-Belajar/assets/index-DLECJnJi.js"></script>
+    <script type="module" crossorigin src="/Jalin-Belajar/assets/index-FWQDnTGB.js"></script>
     <link rel="stylesheet" crossorigin href="/Jalin-Belajar/assets/index-Booh_i7a.css">
   </head>
   <body class="bg-slate-50 text-slate-800 antialiased font-sans">
@@ -19,8 +19,14 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(err => {
-            console.log('SW registration failed:', err);
+          const swPath = (document.querySelector('base')?.href || window.location.pathname.replace(/\/[^/]*$/, '/')) + 'sw.js';
+          // Unregister old service workers first
+          navigator.serviceWorker.getRegistrations().then(registrations => {
+            registrations.forEach(reg => reg.unregister());
+          }).then(() => {
+            navigator.serviceWorker.register('./sw.js').catch(err => {
+              console.log('SW registration failed:', err);
+            });
           });
         });
       }

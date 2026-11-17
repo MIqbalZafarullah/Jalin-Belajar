@@ -4,15 +4,15 @@ import { UserRole } from '../types';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
 import { getWorkspaceHome } from '../services/navigation';
-import { 
-  Building2, 
-  GraduationCap, 
-  Users, 
-  UserCheck, 
-  BookOpen, 
-  ShieldCheck, 
-  MapPin, 
-  Lock, 
+import {
+  Building2,
+  GraduationCap,
+  Users,
+  UserCheck,
+  BookOpen,
+  ShieldCheck,
+  MapPin,
+  Lock,
   User as UserIcon,
   Sparkles,
   ArrowRight,
@@ -314,7 +314,7 @@ export const LoginPage: React.FC = () => {
           </div>
 
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Peran teknis prototipe:</span>
+            <span>Akses teknis:</span>
             <button
               type="button"
               onClick={() => handleRoleQuickSelect('super_admin')}

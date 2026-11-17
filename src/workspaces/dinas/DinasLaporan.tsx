@@ -269,3 +269,4 @@ export const DinasLaporan: React.FC = () => {
     </div>
   );
 };
+
