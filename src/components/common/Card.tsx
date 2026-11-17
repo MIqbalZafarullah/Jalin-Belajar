@@ -1,0 +1,66 @@
+import React from 'react';
+
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
+  onClick?: () => void;
+  hoverable?: boolean;
+}
+
+export const Card: React.FC<CardProps> = ({
+  children,
+  className = '',
+  onClick,
+  hoverable = false
+}) => {
+  return (
+    <div
+      onClick={onClick}
+      className={`bg-white rounded-xl border border-slate-200/80 shadow-sm transition-all duration-200 ${
+        hoverable ? 'hover:shadow-md hover:border-slate-300 cursor-pointer' : ''
+      } ${className}`}
+    >
+      {children}
+    </div>
+  );
+};
+
+export const CardHeader: React.FC<{
+  title: string | React.ReactNode;
+  subtitle?: string | React.ReactNode;
+  action?: React.ReactNode;
+  icon?: React.ReactNode;
+  className?: string;
+}> = ({ title, subtitle, action, icon, className = '' }) => (
+  <div className={`p-5 border-b border-slate-100 flex items-start justify-between gap-4 ${className}`}>
+    <div className="flex items-start gap-3">
+      {icon && (
+        <div className="p-2 rounded-lg bg-blue-50 text-blue-600 shrink-0">
+          {icon}
+        </div>
+      )}
+      <div>
+        <h3 className="font-semibold text-slate-900 text-base leading-snug">{title}</h3>
+        {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+      </div>
+    </div>
+    {action && <div className="shrink-0">{action}</div>}
+  </div>
+);
+
+export const CardBody: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+}> = ({ children, className = '' }) => (
+  <div className={`p-5 ${className}`}>{children}</div>
+);
+
+export const CardFooter: React.FC<{
+  children: React.ReactNode;
+  className?: string;
+}> = ({ children, className = '' }) => (
+  <div className={`px-5 py-3.5 bg-slate-50/70 border-t border-slate-100 rounded-b-xl flex items-center justify-between ${className}`}>
+    {children}
+  </div>
+);
+

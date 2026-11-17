@@ -1,0 +1,17 @@
+{
+  "short_name": "Jalin Belajar",
+  "name": "JALIN BELAJAR — Jejaring Literasi dan Numerasi Berbasis Data",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0F294A",
+  "theme_color": "#1E40AF",
+  "display": "standalone",
+  "orientation": "portrait"
+}
+
