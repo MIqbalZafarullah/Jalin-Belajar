@@ -9,33 +9,37 @@ import {
   UserCheck, 
   BookOpen, 
   ShieldCheck, 
-  Sparkles, 
-  ArrowRight,
-  MapPin,
-  Lock,
+  MapPin, 
+  Lock, 
   User as UserIcon,
   CheckCircle2,
-  AlertCircle
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const LoginPage: React.FC = () => {
-  const { loginAs, loginWithUsername, allUsers } = useAuth();
+  const { loginAs, loginWithUsername } = useAuth();
   const [usernameInput, setUsernameInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('demo123');
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const navigate = useNavigate();
 
   const handleManualLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!usernameInput.trim()) {
+      setErrorMsg('Silakan masukkan nama pengguna.');
+      return;
+    }
     setErrorMsg('');
     setIsLoggingIn(true);
-    const success = await loginWithUsername(usernameInput);
+    const success = await loginWithUsername(usernameInput.trim());
     setIsLoggingIn(false);
     if (success) {
       navigate('/dashboard');
     } else {
-      setErrorMsg('Nama pengguna tidak ditemukan. Silakan gunakan salah satu dari 6 akun simulasi demo.');
+      setErrorMsg('Nama pengguna tidak ditemukan. Silakan gunakan peran demonstrasi di bawah.');
     }
   };
 
@@ -49,163 +53,209 @@ export const LoginPage: React.FC = () => {
       role: 'dinas_pendidikan' as UserRole,
       title: 'Dinas Pendidikan',
       name: 'Drs. H. Ruslan Effendi, M.Pd',
-      desc: 'Pemantauan peta mutu & infrastruktur seluruh sekolah di Kab. Mukomuko',
-      icon: Building2,
-      color: 'bg-blue-50 text-blue-700 border-blue-200 hover:border-blue-400'
+      icon: Building2
     },
     {
       role: 'kepala_sekolah' as UserRole,
       title: 'Kepala Sekolah',
       name: 'Sri Wahyuni, S.Pd., M.M.',
-      desc: 'SDN 05 Air Rami (3T Pesisir) — Evaluasi rasio TIK & capaian asesmen',
-      icon: GraduationCap,
-      color: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:border-indigo-400'
+      icon: GraduationCap
     },
     {
       role: 'guru_koordinator' as UserRole,
       title: 'Guru Koordinator',
       name: 'Ahmad Fauzi, M.Pd.',
-      desc: 'Penggerak 3T — Supervisi pendampingan guru & kurasi praktik baik',
-      icon: Users,
-      color: 'bg-teal-50 text-teal-700 border-teal-200 hover:border-teal-400'
+      icon: Users
     },
     {
       role: 'guru' as UserRole,
       title: 'Guru Kelas 5',
       name: 'Siti Rahmawati, S.Pd.',
-      desc: 'Wali Kelas 5 — Penyusunan asesmen numerasi pecahan & tindak lanjut',
-      icon: UserCheck,
-      color: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:border-emerald-400'
+      icon: UserCheck
     },
     {
       role: 'siswa' as UserRole,
-      title: 'Peserta Didik (Siswa)',
+      title: 'Peserta Didik',
       name: 'Rizky Pratama Mukomuko',
-      desc: 'Siswa Kelas 5 SD — Pengerjaan tes diagnostik & modul remedial adaptif',
-      icon: BookOpen,
-      color: 'bg-amber-50 text-amber-700 border-amber-200 hover:border-amber-400'
+      icon: BookOpen
     },
     {
       role: 'super_admin' as UserRole,
       title: 'Super Admin',
       name: 'Bambang Irawan, M.Kom',
-      desc: 'Administrator sistem, basis data IndexedDB & pengujian offline',
-      icon: ShieldCheck,
-      color: 'bg-purple-50 text-purple-700 border-purple-200 hover:border-purple-400'
+      icon: ShieldCheck
     }
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col justify-center py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl w-full mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold border border-blue-200">
-            <MapPin className="w-3.5 h-3.5" />
-            <span>Kabupaten Mukomuko, Provinsi Bengkulu</span>
-          </div>
+    <div className="min-h-screen flex flex-col lg:flex-row bg-slate-50 font-sans">
+      {/* Left 60%: Navy gradient background */}
+      <div className="w-full lg:w-[60%] bg-gradient-to-br from-[#1e3a5f] to-[#2563eb] text-white p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+        {/* Subtle decorative circles */}
+        <div className="absolute top-0 right-0 -translate-y-1/3 translate-x-1/3 w-96 h-96 rounded-full bg-white/5 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 translate-y-1/3 -translate-x-1/3 w-80 h-80 rounded-full bg-blue-400/10 pointer-events-none" />
 
-          <div className="flex items-center justify-center gap-3 pt-2">
-            <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center font-black text-white text-2xl shadow-lg shadow-blue-500/30">
-              JB
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              JALIN BELAJAR
-            </h1>
+        {/* Top: 3T Region Badge */}
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-xs font-semibold text-sky-200">
+            <MapPin className="w-3.5 h-3.5 text-sky-300" />
+            <span>Kabupaten Mukomuko, Bengkulu</span>
           </div>
-          <p className="text-base text-slate-600 font-medium">
-            Jejaring Aksi Literasi dan Numerasi Berbasis Data untuk Wilayah 3T
-          </p>
-          <p className="text-xs text-slate-400 max-w-lg mx-auto">
-            Platform digital terintegrasi untuk pemetaan infrastruktur, pembelajaran adaptif terarah, dan kolaborasi pendidik di daerah 3T.
-          </p>
+          <span className="text-xs px-2.5 py-1 rounded-full bg-blue-500/30 text-white font-medium border border-blue-400/30">
+            Wilayah 3T
+          </span>
         </div>
 
-        {/* 1-Click Role Switcher Demo Cards */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        {/* Center: Brand & Tagline */}
+        <div className="relative z-10 my-12 lg:my-auto max-w-xl">
+          <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center font-extrabold text-2xl text-white mb-6 shadow-md">
+            JB
+          </div>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
+            JALIN BELAJAR
+          </h1>
+          <p className="mt-3 text-lg sm:text-xl font-medium text-sky-100">
+            Jejaring Aksi Literasi dan Numerasi Berbasis Data
+          </p>
+          <p className="mt-5 text-sm sm:text-base text-slate-200/90 leading-relaxed font-normal">
+            Platform ekosistem pendidikan cerdas yang memadukan pemetaan infrastruktur sekolah 3T, asesmen diagnostik adaptif berkala, pembinaan komunitas guru, dan sinkronisasi data local-first tanpa hambatan keterbatasan internet.
+          </p>
+
+          <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-4 pt-6 border-t border-white/15 text-xs">
             <div>
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                Pilih Akun Simulasi Demonstrasi
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Klik salah satu dari 6 peran di bawah untuk langsung masuk dan melihat antarmuka serta hak akses masing-masing pengguna.
-              </p>
+              <p className="text-sky-200 font-semibold">4 Modul Terpadu</p>
+              <p className="text-slate-300 text-[11px] mt-0.5">PETA • TUNTAS • GURU • HUB</p>
             </div>
-            <span className="text-xs bg-slate-100 font-mono text-slate-600 px-2.5 py-1 rounded-md font-semibold hidden sm:inline">
-              6 Peran Siap Uji
-            </span>
+            <div>
+              <p className="text-sky-200 font-semibold">Local-First Ready</p>
+              <p className="text-slate-300 text-[11px] mt-0.5">Operasional luring Dexie IDB</p>
+            </div>
+            <div>
+              <p className="text-sky-200 font-semibold">Berbasis Bukti</p>
+              <p className="text-slate-300 text-[11px] mt-0.5">Diagnostik capaian per siswa</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom indicator */}
+        <div className="relative z-10 text-xs text-slate-300/80 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>Sistem Siap Operasi — Arsitektur Local-First Wilayah 3T</span>
+        </div>
+      </div>
+
+      {/* Right 40%: White Panel */}
+      <div className="w-full lg:w-[40%] bg-white p-6 sm:p-10 lg:p-12 flex flex-col justify-between overflow-y-auto">
+        <div className="max-w-md w-full mx-auto space-y-6">
+          {/* Header */}
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+              Masuk ke Sistem
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Masukkan kredensial Anda atau pilih peran demonstrasi di bawah.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            {demoAccounts.map(account => {
-              const Icon = account.icon;
-              return (
-                <div
-                  key={account.role}
-                  onClick={() => handleRoleQuickSelect(account.role)}
-                  className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between hover:shadow-md ${account.color}`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold uppercase tracking-wider">{account.title}</span>
-                      <Icon className="w-4 h-4 shrink-0 opacity-80" />
-                    </div>
-                    <h3 className="font-bold text-slate-900 text-sm leading-snug">{account.name}</h3>
-                    <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed">{account.desc}</p>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs font-semibold">
-                    <span>Masuk sebagai {account.title}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Manual Username Login form as secondary option */}
-          <div className="pt-6 border-t border-slate-100">
-            <form onSubmit={handleManualLogin} className="max-w-md mx-auto space-y-3">
-              <p className="text-xs font-bold text-slate-700 text-center uppercase tracking-wider">
-                Atau Masuk dengan Nama Pengguna
-              </p>
+          {/* Form */}
+          <form onSubmit={handleManualLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Nama Pengguna
+              </label>
               <div className="relative">
                 <UserIcon className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
                 <input
                   type="text"
                   value={usernameInput}
-                  onChange={e => setUsernameInput(e.target.value)}
-                  placeholder="Ketik: admin, dinas, kepsek, koordinator, guru, atau siswa"
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => setUsernameInput(e.target.value)}
+                  placeholder="Contoh: guru, dinas, kepsek, siswa"
+                  className="w-full pl-9 pr-3.5 py-2 text-sm rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
                 />
               </div>
+            </div>
 
-              {errorMsg && (
-                <p className="text-xs text-rose-600 text-center font-medium">{errorMsg}</p>
-              )}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Kata Sandi
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                <input
+                  type="password"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-9 pr-3.5 py-2 text-sm rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                />
+              </div>
+            </div>
 
-              <Button
-                type="submit"
-                variant="secondary"
-                size="sm"
-                className="w-full"
-                isLoading={isLoggingIn}
-              >
-                Masuk
-              </Button>
-            </form>
+            {errorMsg && (
+              <p className="text-xs text-rose-600 font-medium">{errorMsg}</p>
+            )}
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              className="w-full font-semibold"
+              isLoading={isLoggingIn}
+            >
+              Masuk
+            </Button>
+          </form>
+
+          {/* Demonstration Quick Roles (2x3 Grid) */}
+          <div className="pt-4 border-t border-slate-100">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Atau pilih peran demonstrasi:
+              </span>
+              <span className="text-[10px] text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                1-Klik Masuk
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              {demoAccounts.map((account) => {
+                const Icon = account.icon;
+                return (
+                  <button
+                    key={account.role}
+                    type="button"
+                    onClick={() => handleRoleQuickSelect(account.role)}
+                    className="p-3 text-left rounded-xl border border-slate-200/90 bg-slate-50/50 hover:bg-blue-50/60 hover:border-blue-300 transition-all flex flex-col justify-between group"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide group-hover:text-blue-700 truncate">
+                          {account.title}
+                        </span>
+                        <Icon className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 shrink-0" />
+                      </div>
+                      <p className="text-xs font-semibold text-slate-900 group-hover:text-blue-900 truncate">
+                        {account.name}
+                      </p>
+                    </div>
+                    <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-400 group-hover:text-blue-600 font-medium">
+                      <span>Pilih peran</span>
+                      <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* Prototype note */}
-        <div className="text-center text-xs text-slate-400 space-y-1">
-          <p>Sistem ini merupakan prototipe fungsional lokal (Local-First Prototype).</p>
-          <p>Autentikasi disimulasikan melalui penyimpanan IndexedDB peramban dan tidak memerlukan sambungan peladen daring.</p>
+        {/* Bottom Disclaimer */}
+        <div className="mt-8 pt-4 border-t border-slate-100 text-center">
+          <p className="text-[11px] text-slate-400">
+            Data simulasi — bukan data resmi
+          </p>
         </div>
       </div>
     </div>
   );
 };
-

@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   Compass, 
@@ -7,7 +7,6 @@ import {
   GraduationCap, 
   Database, 
   LayoutDashboard, 
-  MapPin, 
   BookOpen, 
   FileCheck, 
   Sparkles, 
@@ -15,9 +14,9 @@ import {
   Share2, 
   DownloadCloud, 
   RotateCw, 
-  Info,
   X,
-  Layers
+  Layers,
+  LogOut
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,14 +25,20 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { role, currentUser } = useAuth();
+  const { role, currentUser, logout } = useAuth();
+  const navigate = useNavigate();
 
   const isSiswa = role === 'siswa';
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   interface NavItem {
     name: string;
     path: string;
-    icon: any;
+    icon: React.ComponentType<{ className?: string }>;
     visible: boolean;
     badge?: string;
   }
@@ -199,59 +204,62 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       {/* Mobile Backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-40 lg:hidden"
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 lg:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* Sidebar Container */}
+      {/* Sidebar Container: White background, 256px (w-64) */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-40 w-72 bg-slate-900 text-slate-100 flex flex-col border-r border-slate-800 transition-transform duration-200 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-40 w-64 bg-white text-slate-800 flex flex-col border-r border-slate-200/90 transition-transform duration-200 ease-in-out lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Brand Header */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-sky-400 flex items-center justify-center font-black text-white text-lg tracking-wider shadow-md shadow-blue-500/20">
+        <div className="h-16 px-5 border-b border-slate-100 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-700 to-blue-500 flex items-center justify-center font-extrabold text-white text-base tracking-wider shadow-sm">
               JB
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-base tracking-tight text-white">JALIN BELAJAR</span>
-                <span className="text-[10px] font-bold bg-blue-500/20 text-sky-400 px-1.5 py-0.5 rounded border border-blue-500/30">
+                <span className="font-bold text-sm tracking-tight text-slate-900">JALIN BELAJAR</span>
+                <span className="text-[10px] font-bold bg-blue-50 text-blue-700 px-1.5 py-0.2 rounded border border-blue-200">
                   3T
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 leading-tight">Jejaring Literasi & Numerasi Data</p>
+              <p className="text-[10px] text-slate-400 font-medium">Jejaring Lit-Num Data</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+            className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+            aria-label="Tutup Menu"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* User Card inside Sidebar */}
-        <div className="mx-3 mt-3 px-3 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center gap-3">
-          <img
-            src={currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80'}
-            alt={currentUser?.name}
-            className="w-9 h-9 rounded-full object-cover ring-1 ring-blue-400/50"
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-white truncate">{currentUser?.name}</p>
-            <p className="text-[11px] text-sky-400 font-mono capitalize">
-              {role?.replace('_', ' ')}
-            </p>
+        <div className="p-3 border-b border-slate-100 shrink-0">
+          <div className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-3">
+            <img
+              src={currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80'}
+              alt={currentUser?.name}
+              className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200 shrink-0"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-slate-900 truncate">{currentUser?.name}</p>
+              <p className="text-[10px] text-blue-600 font-medium capitalize truncate">
+                {role?.replace('_', ' ')}
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Navigation list */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
           {navSections.filter(s => s.visible !== false).map((section, idx) => (
             <div key={idx} className="space-y-1">
               <p className="px-3 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
@@ -270,17 +278,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                       className={({ isActive }) =>
                         `flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                           isActive
-                            ? 'bg-blue-600 text-white font-semibold shadow-sm shadow-blue-500/20'
-                            : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                            ? 'bg-blue-50 text-blue-700 font-semibold border-l-2 border-blue-600'
+                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                         }`
                       }
                     >
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <Icon className="w-4 h-4 shrink-0 opacity-80" />
-                        <span>{item.name}</span>
+                        <span className="truncate">{item.name}</span>
                       </div>
                       {item.badge && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0 ml-1">
                           {item.badge}
                         </span>
                       )}
@@ -293,9 +301,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </nav>
 
         {/* Clean Sidebar Footer */}
-        <div className="px-4 py-3 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
-          <span>JALIN BELAJAR</span>
-          <span className="font-mono text-[10px] text-slate-600">v1.0.0</span>
+        <div className="p-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400 shrink-0">
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-slate-700 text-[11px]">JALIN BELAJAR</span>
+            <span className="font-mono text-[10px] text-slate-400">v1.0.0</span>
+          </div>
+          <button
+            onClick={handleLogout}
+            title="Keluar dari akun"
+            className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
         </div>
       </aside>
     </>

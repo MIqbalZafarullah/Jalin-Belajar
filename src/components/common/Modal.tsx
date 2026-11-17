@@ -46,10 +46,14 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
+        onClick={onClose} 
+      />
       <div className="flex min-h-full items-center justify-center p-4">
         <div 
-          className={`relative w-full ${sizeClasses[size]} rounded-2xl bg-white shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] z-10 animate-in fade-in zoom-in-95 duration-150`}
+          className={`relative w-full ${sizeClasses[size]} rounded-2xl bg-white shadow-xl border border-slate-100 flex flex-col max-h-[90vh] z-10 transition-all`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -83,4 +87,3 @@ export const Modal: React.FC<ModalProps> = ({
     </div>
   );
 };
-

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../../database/db';
-import { AssessmentSubmission, Assessment, Question, Material } from '../../types';
+import { AssessmentSubmission, Assessment, Question, Material, Competency } from '../../types';
 import { Card, CardHeader, CardBody } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
@@ -16,18 +16,25 @@ import {
   HelpCircle,
   TrendingUp,
   RotateCcw,
-  Printer
+  Printer,
+  Share2,
+  Check,
+  ChevronRight,
+  Award
 } from 'lucide-react';
 import { PrintDiagnosticReport } from '../../components/common/PrintDiagnosticReport';
+import { useToast } from '../../context/ToastContext';
 
 export const AssessmentResult: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [submission, setSubmission] = useState<AssessmentSubmission | null>(null);
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [recommendedMaterials, setRecommendedMaterials] = useState<Material[]>([]);
+  const [allMaterials, setAllMaterials] = useState<Material[]>([]);
+  const [competencies, setCompetencies] = useState<Competency[]>([]);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   useEffect(() => {
@@ -39,16 +46,15 @@ export const AssessmentResult: React.FC = () => {
           const asm = await db.assessments.get(sub.assessmentId);
           if (asm) setAssessment(asm);
 
-          // Get questions
           const qIds = sub.answers.map(a => a.questionId);
           const qList = await db.questions.bulkGet(qIds);
           setQuestions(qList.filter((q): q is Question => q !== undefined));
 
-          // Get recommended materials
-          if (sub.recommendedMaterialIds.length > 0) {
-            const mats = await db.materials.bulkGet(sub.recommendedMaterialIds);
-            setRecommendedMaterials(mats.filter((m): m is Material => m !== undefined));
-          }
+          const mats = await db.materials.toArray();
+          setAllMaterials(mats);
+
+          const comps = await db.competencies.toArray();
+          setCompetencies(comps);
         }
       }
     };
@@ -57,155 +63,275 @@ export const AssessmentResult: React.FC = () => {
 
   if (!submission) {
     return (
-      <div className="text-center py-12">
-        <p className="text-slate-500">Memuat rekap hasil asesmen...</p>
+      <div className="bg-white rounded-xl border border-slate-100 p-12 text-center max-w-lg mx-auto">
+        <Sparkles className="w-10 h-10 text-blue-600 animate-pulse mx-auto mb-3" />
+        <h2 className="text-base font-bold text-slate-800">Memuat Rekap Hasil Asesmen...</h2>
+        <p className="text-xs text-slate-500 mt-1">Mengambil analisis capaian diagnostik dari database lokal.</p>
       </div>
     );
   }
 
-  const isPassed = submission.score >= 70;
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: `Hasil Asesmen JALIN BELAJAR: ${submission.studentName}`,
+        text: `Hasil asesmen diagnostik ${submission.studentName} memperoleh skor ${submission.score}/100 (${submission.correctCount} dari ${submission.totalQuestions} soal benar).`,
+        url: window.location.href
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      showToast('Tautan hasil asesmen berhasil disalin ke papan klip.', 'success');
+    }
+  };
+
+  // Build recommendation engine per competency:
+  // - Score < 60% per competency -> "Perlu Penguatan" -> recommend basic materials for that competency
+  // - Score 60-79% -> "Cukup Baik" -> recommend practice exercises
+  // - Score >= 80% -> "Sudah Menguasai" -> recommend enrichment
+  const analyzedCompetencies = (submission.competencyMastery || []).map(cm => {
+    let statusText: 'Perlu Penguatan' | 'Cukup Baik' | 'Sudah Menguasai' = 'Cukup Baik';
+    let badgeVariant: 'danger' | 'warning' | 'success' = 'warning';
+    let recommendationType: 'dasar' | 'latihan' | 'pengayaan' = 'latihan';
+
+    if (cm.percentage < 60) {
+      statusText = 'Perlu Penguatan';
+      badgeVariant = 'danger';
+      recommendationType = 'dasar';
+    } else if (cm.percentage >= 80) {
+      statusText = 'Sudah Menguasai';
+      badgeVariant = 'success';
+      recommendationType = 'pengayaan';
+    } else {
+      statusText = 'Cukup Baik';
+      badgeVariant = 'warning';
+      recommendationType = 'latihan';
+    }
+
+    // Related questions count
+    const relAnswers = submission.answers.filter(a => a.competencyId === cm.competencyId);
+    const correctCount = relAnswers.filter(a => a.isCorrect).length;
+    const totalCount = relAnswers.length || 1;
+
+    // Find recommended materials for this competency
+    const matchingMaterials = allMaterials.filter(m => m.competencyId === cm.competencyId);
+
+    return {
+      ...cm,
+      statusText,
+      badgeVariant,
+      recommendationType,
+      correctCount,
+      totalCount,
+      materials: matchingMaterials
+    };
+  });
+
+  // Recommended materials list
+  const recommendedMaterialsList = allMaterials.filter(m => 
+    submission.recommendedMaterialIds?.includes(m.id) ||
+    analyzedCompetencies.some(ac => ac.statusText === 'Perlu Penguatan' && ac.competencyId === m.competencyId)
+  ).slice(0, 4);
+
+  // Score state for celebration header
+  const isHighPerformance = submission.score >= 80;
+  const isModeratePerformance = submission.score >= 60 && submission.score < 80;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Top Breadcrumb */}
-      <div className="flex items-center justify-between">
+      {/* Top Navigation & Actions Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <Button
           variant="ghost"
           size="sm"
           icon={<ArrowLeft className="w-4 h-4" />}
           onClick={() => navigate('/tuntas/asesmen')}
         >
-          Daftar Asesmen
+          Kembali ke Daftar Asesmen
         </Button>
 
-        <div className="flex items-center gap-3">
+        {/* Print / Share Buttons */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<Share2 className="w-4 h-4" />}
+            onClick={handleShare}
+          >
+            Bagikan
+          </Button>
           <Button
             variant="outline"
             size="sm"
             icon={<Printer className="w-4 h-4 text-blue-600" />}
             onClick={() => setIsPrintModalOpen(true)}
           >
-            Cetak / Ekspor Rapor PDF
+            Cetak / Unduh Rapor PDF
           </Button>
-
-          <span className="text-xs text-slate-500 hidden sm:inline">
-            Diselesaikan: {new Date(submission.submittedAt).toLocaleString('id-ID')}
-          </span>
         </div>
       </div>
 
-      {/* Main Score Hero Card */}
-      <div className={`rounded-2xl p-6 sm:p-8 border shadow-sm ${
-        isPassed 
-          ? 'bg-gradient-to-r from-emerald-900 via-teal-950 to-slate-900 text-white border-emerald-800'
-          : 'bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white border-blue-900'
-      }`}>
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="text-center sm:text-left">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-300 bg-white/10 px-3 py-1 rounded-full border border-white/20">
-              Hasil Asesmen Diagnostik Siswa
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold mt-2">{submission.studentName}</h1>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1">
-              Paket: <strong>{assessment?.title || 'Asesmen Numerasi & Literasi'}</strong>
+      {/* Celebration Header with Large Circular Badge */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-8">
+        <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+          {/* Large Circular Badge */}
+          <div className="relative shrink-0">
+            <div className={`w-32 h-32 rounded-full flex flex-col items-center justify-center border-4 ${
+              isHighPerformance
+                ? 'border-emerald-500 bg-emerald-50/60 text-emerald-700'
+                : isModeratePerformance
+                ? 'border-blue-500 bg-blue-50/60 text-blue-700'
+                : 'border-amber-500 bg-amber-50/60 text-amber-700'
+            }`}>
+              <span className="text-4xl font-extrabold tracking-tight">
+                {submission.score}
+              </span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider mt-0.5 text-slate-500">
+                Skor Akhir
+              </span>
+            </div>
+
+            {/* Floating trophy / sparkles icon */}
+            <div className="absolute -top-1 -right-1 w-9 h-9 rounded-full bg-white shadow-md border border-slate-100 flex items-center justify-center text-amber-500">
+              {isHighPerformance ? <Award className="w-5 h-5 text-emerald-600" /> : <Sparkles className="w-5 h-5 text-amber-500" />}
+            </div>
+          </div>
+
+          {/* Celebration Text & Score Breakdown */}
+          <div className="text-center sm:text-left space-y-2 flex-1">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Diagnostik Berhasil Diselesaikan</span>
+            </div>
+
+            <h1 className="text-2xl font-bold text-slate-900">
+              {isHighPerformance 
+                ? `Luar Biasa, ${submission.studentName}! 🎉` 
+                : isModeratePerformance
+                ? `Kerja Bagus, ${submission.studentName}! 👍`
+                : `Semangat Terus, ${submission.studentName}! 💪`}
+            </h1>
+
+            {/* Score Breakdown: Benar X dari Y soal */}
+            <p className="text-sm text-slate-600">
+              Hasil pengerjaan Anda: <strong className="font-bold text-slate-900">Benar {submission.correctCount} dari {submission.totalQuestions} soal</strong> ({submission.score}%).
             </p>
-          </div>
 
-          <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 text-center">
-            <div>
-              <p className="text-xs text-slate-300 font-medium">Skor Akhir</p>
-              <p className="text-4xl sm:text-5xl font-black text-amber-300 tracking-tight">{submission.score}</p>
-            </div>
-            <div className="h-10 w-[1px] bg-white/20" />
-            <div className="text-left text-xs text-slate-200 space-y-0.5">
-              <p>Benar: <strong className="text-emerald-400">{submission.correctCount}</strong> / {submission.totalQuestions}</p>
-              <p>Status: <strong className={isPassed ? 'text-emerald-400' : 'text-amber-300'}>{isPassed ? 'TUNTAS' : 'PERLU PENGUATAN'}</strong></p>
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 pt-2 text-xs text-slate-500">
+              <span>Paket: <strong className="text-slate-700">{assessment?.title || 'Asesmen Diagnostik'}</strong></span>
+              <span>•</span>
+              <span>Waktu Selesai: <strong className="text-slate-700">{new Date(submission.submittedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</strong></span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Competency Mastery Breakdown */}
+      {/* Competency Analysis Table */}
       <Card>
         <CardHeader
-          title="Analisis Penguasaan Kompetensi Dasar"
-          subtitle="Sistem otomatis mengidentifikasi kompetensi yang perlu penguatan"
+          title="Tabel Analisis Penguasaan Kompetensi"
+          subtitle="Pemetaan capaian butir soal ke kode kompetensi dasar Kurikulum Merdeka"
           icon={<TrendingUp className="w-5 h-5 text-blue-600" />}
         />
-        <CardBody className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {submission.competencyMastery.map(comp => (
-              <div 
-                key={comp.competencyId}
-                className={`p-4 rounded-xl border ${
-                  comp.isMastered 
-                    ? 'bg-emerald-50/50 border-emerald-200' 
-                    : 'bg-amber-50/50 border-amber-200'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-bold text-slate-900 text-sm">{comp.competencyName}</h4>
-                  <Badge variant={comp.isMastered ? 'success' : 'warning'} size="sm">
-                    {comp.isMastered ? 'Tuntas' : 'Perlu Penguatan'}
-                  </Badge>
-                </div>
-
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden my-2">
-                  <div
-                    className={`h-2 rounded-full ${comp.isMastered ? 'bg-emerald-600' : 'bg-amber-500'}`}
-                    style={{ width: `${comp.percentage}%` }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span>Capaian: <strong>{comp.percentage}%</strong></span>
-                  <span>Ambang Tuntas: <strong>70%</strong></span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardBody>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-slate-600">
+            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-100">
+              <tr>
+                <th className="px-6 py-3.5">Kompetensi Dasar</th>
+                <th className="px-6 py-3.5">Rincian Jawaban Benar</th>
+                <th className="px-6 py-3.5">Persentase</th>
+                <th className="px-6 py-3.5">Status Penguasaan</th>
+                <th className="px-6 py-3.5 text-right">Tindak Lanjut</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {analyzedCompetencies.map(comp => (
+                <tr key={comp.competencyId} className="hover:bg-slate-50/60 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="font-semibold text-slate-900">{comp.competencyName}</div>
+                    <div className="text-xs text-slate-400 mt-0.5 font-mono">{comp.competencyId}</div>
+                  </td>
+                  <td className="px-6 py-4 font-medium text-slate-700">
+                    {comp.correctCount} / {comp.totalCount} Soal Benar
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full ${
+                            comp.percentage >= 80 ? 'bg-emerald-500' : comp.percentage >= 60 ? 'bg-amber-500' : 'bg-rose-500'
+                          }`}
+                          style={{ width: `${comp.percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-bold text-slate-700">{comp.percentage}%</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <Badge variant={comp.badgeVariant} size="sm" dot>
+                      {comp.statusText}
+                    </Badge>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/tuntas/latihan/${comp.competencyId}`)}
+                    >
+                      {comp.recommendationType === 'dasar' ? 'Buka Remedial' : 'Latihan Lagi'}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
-      {/* Prescriptive Adaptive Recommendation Section */}
-      <Card className="border-amber-200 bg-amber-50/20">
+      {/* RECOMMENDATION ENGINE: Prescriptive Materials List with Direct Links */}
+      <Card>
         <CardHeader
-          title="Rekomendasi Pembelajaran Adaptif (JALIN-TUNTAS)"
-          subtitle="Modul yang otomatis disarankan sistem berdasarkan jawaban salah siswa"
-          icon={<Sparkles className="w-5 h-5 text-amber-600" />}
+          title="Rekomendasi Materi & Latihan Preskriptif"
+          subtitle="Modul pembelajaran yang disarankan sistem secara otomatis berdasarkan kelemahan spesifik Anda"
+          icon={<Sparkles className="w-5 h-5 text-amber-500" />}
         />
-        <CardBody>
-          {recommendedMaterials.length === 0 ? (
-            <p className="text-xs text-slate-500">Semua kompetensi telah tuntas! Siswa dapat membaca materi pengayaan.</p>
+        <CardBody className="p-6">
+          {recommendedMaterialsList.length === 0 ? (
+            <div className="text-center py-6 text-slate-500">
+              <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
+              <p className="font-semibold text-slate-800">Semua Kompetensi Telah Dikuasai Dengan Baik!</p>
+              <p className="text-xs text-slate-400 mt-1">Anda dapat melanjutkan ke paket asesmen berikutnya atau membaca modul pengayaan.</p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {recommendedMaterials.map(mat => (
-                <div 
+              {recommendedMaterialsList.map(mat => (
+                <div
                   key={mat.id}
-                  className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs hover:shadow-sm transition flex flex-col justify-between"
+                  onClick={() => navigate(`/tuntas/materi/${mat.id}`)}
+                  className="p-5 rounded-xl border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all cursor-pointer bg-slate-50/50 hover:bg-white flex flex-col justify-between"
                 >
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="warning" size="sm">
-                        Rekomendasi Remedial
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <Badge variant={mat.domain === 'Numerasi' ? 'success' : 'primary'} size="sm">
+                        {mat.domain} {mat.level}
                       </Badge>
-                      <span className="text-xs text-slate-500 font-medium">{mat.domain}</span>
+                      <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                        Rekomendasi Adaptif
+                      </span>
                     </div>
 
-                    <h4 className="font-bold text-slate-900 text-sm">{mat.title}</h4>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">{mat.description}</p>
+                    <h4 className="font-bold text-slate-900 text-sm hover:text-blue-600 transition-colors">
+                      {mat.title}
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-1.5 line-clamp-2">
+                      {mat.description}
+                    </p>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-xs text-slate-400">{mat.readingTimeMinutes} Menit</span>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      icon={<BookOpen className="w-3.5 h-3.5" />}
-                      onClick={() => navigate(`/tuntas/materi/${mat.id}`)}
-                    >
-                      Buka Modul Ini
-                    </Button>
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-400 font-medium">~{mat.readingTimeMinutes} Menit Belajar</span>
+                    <span className="font-semibold text-blue-600 flex items-center gap-1">
+                      Pelajari Sekarang <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
                   </div>
                 </div>
               ))}
@@ -214,55 +340,7 @@ export const AssessmentResult: React.FC = () => {
         </CardBody>
       </Card>
 
-      {/* Question by Question Review */}
-      <Card>
-        <CardHeader
-          title="Ulasan Butir Soal & Pembahasan Konseptual"
-          subtitle="Pelajari letak kekeliruan jawaban untuk perbaikan pemahaman"
-          icon={<HelpCircle className="w-5 h-5 text-slate-600" />}
-        />
-        <CardBody className="space-y-4">
-          {questions.map((q, idx) => {
-            const ans = submission.answers.find(a => a.questionId === q.id);
-            const isCorrect = ans?.isCorrect ?? false;
-            return (
-              <div key={q.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-xs text-slate-700">Soal #{idx + 1}</span>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold">
-                    {isCorrect ? (
-                      <span className="text-emerald-600 flex items-center gap-1">
-                        <CheckCircle2 className="w-4 h-4" /> Jawaban Benar
-                      </span>
-                    ) : (
-                      <span className="text-rose-600 flex items-center gap-1">
-                        <XCircle className="w-4 h-4" /> Jawaban Salah
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <p className="text-sm text-slate-800 font-medium mb-3 whitespace-pre-line">
-                  {q.questionText}
-                </p>
-
-                <div className="text-xs text-slate-600 space-y-1 mb-3">
-                  <p>Jawaban Anda: <strong className={isCorrect ? 'text-emerald-700' : 'text-rose-600'}>Pilihan {ans?.selectedOption || 'Kosong'}</strong></p>
-                  {!isCorrect && (
-                    <p>Kunci Benar: <strong className="text-emerald-700">Pilihan {q.correctAnswer}</strong></p>
-                  )}
-                </div>
-
-                <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-900">
-                  <strong>Pembahasan:</strong> {q.explanation}
-                </div>
-              </div>
-            );
-          })}
-        </CardBody>
-      </Card>
-
-      {/* Official Printable Report Modal */}
+      {/* Print Diagnostic Modal */}
       <PrintDiagnosticReport
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
@@ -272,4 +350,3 @@ export const AssessmentResult: React.FC = () => {
     </div>
   );
 };
-

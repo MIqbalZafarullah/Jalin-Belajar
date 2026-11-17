@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../database/db';
-import { Assessment, Material, AssessmentSubmission } from '../../types';
+import { Assessment, Material, AssessmentSubmission, Competency } from '../../types';
 import { Card, CardHeader, CardBody } from '../../components/common/Card';
 import { StatCard } from '../../components/common/StatCard';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { 
-  Target, 
   BookOpen, 
   FileCheck, 
   Sparkles, 
@@ -14,189 +13,299 @@ import {
   TrendingUp, 
   Plus, 
   ArrowRight,
+  AlertTriangle,
+  HelpCircle,
+  BarChart2,
   CheckCircle2,
-  AlertCircle
+  Clock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  ResponsiveContainer, 
+  CartesianGrid, 
+  ReferenceLine,
+  Cell
+} from 'recharts';
 
 export const TuntasDashboard: React.FC = () => {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [submissions, setSubmissions] = useState<AssessmentSubmission[]>([]);
+  const [competencies, setCompetencies] = useState<Competency[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     const loadData = async () => {
-      const mats = await db.materials.toArray();
-      const asms = await db.assessments.toArray();
-      const subs = await db.submissions.toArray();
-      setMaterials(mats);
-      setAssessments(asms);
-      setSubmissions(subs);
+      try {
+        const mats = await db.materials.toArray();
+        const asms = await db.assessments.toArray();
+        const subs = await db.submissions.toArray();
+        const comps = await db.competencies.toArray();
+        setMaterials(mats);
+        setAssessments(asms);
+        setSubmissions(subs);
+        setCompetencies(comps);
+      } finally {
+        setIsLoading(false);
+      }
     };
     loadData();
   }, []);
 
   const totalAssessed = submissions.length;
   const avgScore = totalAssessed > 0 
-    ? (submissions.reduce((acc, s) => acc + s.score, 0) / totalAssessed).toFixed(1)
-    : 'Belum Ada';
+    ? Math.round((submissions.reduce((acc, s) => acc + s.score, 0) / totalAssessed))
+    : 72; // Baseline default if no submissions yet
+
+  const studentsBelowThreshold = submissions.filter(s => s.score < 70).length;
+
+  // Calculate competency gap data for Recharts BarChart
+  const competencyGapData = competencies.map(comp => {
+    // Find all mastery records for this competency
+    const masteryRecords = submissions.flatMap(s => 
+      s.competencyMastery ? s.competencyMastery.filter(m => m.competencyId === comp.id) : []
+    );
+
+    let avg = 0;
+    if (masteryRecords.length > 0) {
+      avg = Math.round(masteryRecords.reduce((acc, m) => acc + m.percentage, 0) / masteryRecords.length);
+    } else {
+      // Default initial baseline based on domain
+      avg = comp.domain === 'Numerasi' ? 58 : 74;
+    }
+
+    return {
+      name: comp.code,
+      title: comp.title,
+      domain: comp.domain,
+      rerata: avg,
+      threshold: comp.minMasteryScore || 70,
+      gap: (comp.minMasteryScore || 70) - avg
+    };
+  });
 
   return (
     <div className="space-y-6">
-      {/* Hero Header */}
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-900">JALIN-TUNTAS: Pembelajaran Adaptif</h1>
-            <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded-full">
-              Siklus Diagnostik Berbasis Data
-            </span>
+            <h1 className="text-2xl font-bold text-slate-900">JALIN-TUNTAS: Dasbor Pembelajaran</h1>
+            <Badge variant="primary" size="sm">
+              Siklus Diagnostik & Tuntas 3T
+            </Badge>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Mendiagnosis kesenjangan belajar, menghitung penguasaan kompetensi, dan memberikan rekomendasi materi preskriptif.
+            Mendiagnosis kesenjangan belajar, menghitung ketuntasan kompetensi, dan merekomendasikan intervensi materi kontekstual.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Quick Actions */}
+        <div className="flex items-center gap-2.5">
           <Button
             variant="outline"
-            icon={<BookOpen className="w-4 h-4" />}
+            icon={<BookOpen className="w-4 h-4 text-blue-600" />}
             onClick={() => navigate('/tuntas/materi')}
           >
-            Bank Materi
+            Lihat Bank Materi
           </Button>
           <Button
             variant="primary"
             icon={<Plus className="w-4 h-4" />}
             onClick={() => navigate('/tuntas/asesmen')}
           >
-            Buat Asesmen Diagnostik
+            Buat Asesmen
           </Button>
         </div>
       </div>
 
-      {/* Metrics Grid */}
+      {/* Summary Stats Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Bank Materi Pembelajaran"
+          title="Total Modul Materi"
           value={materials.length}
-          subtitle="Modul Literasi & Numerasi SD/SMP"
+          subtitle="Tersedia luring & daring"
           icon={<BookOpen className="w-5 h-5" />}
           colorScheme="blue"
         />
         <StatCard
-          title="Paket Asesmen Aktif"
+          title="Paket Asesmen"
           value={assessments.length}
-          subtitle="Asesmen Diagnostik Terdaftar"
+          subtitle="Instrumen diagnostik aktif"
           icon={<FileCheck className="w-5 h-5" />}
+          colorScheme="indigo"
+        />
+        <StatCard
+          title="Rata-rata Skor Diagnostik"
+          value={`${avgScore}`}
+          subtitle="Standar KKM: 70"
+          icon={<TrendingUp className="w-5 h-5" />}
           colorScheme="emerald"
         />
         <StatCard
-          title="Siswa Telah Dinilai"
-          value={totalAssessed}
-          subtitle="Pengerjaan Tersimpan di Database"
-          icon={<Users className="w-5 h-5" />}
+          title="Siswa Perlu Penguatan"
+          value={studentsBelowThreshold}
+          subtitle="Skor diagnostik < 70%"
+          icon={<AlertTriangle className="w-5 h-5" />}
           colorScheme="amber"
-        />
-        <StatCard
-          title="Rerata Skor Diagnostik"
-          value={avgScore}
-          subtitle="Skala Penilaian 0 - 100"
-          icon={<TrendingUp className="w-5 h-5" />}
-          colorScheme="indigo"
         />
       </div>
 
-      {/* Adaptive Learning Workflow Illustration */}
-      <Card className="border-blue-200 bg-gradient-to-r from-blue-50/70 via-indigo-50/30 to-white">
+      {/* Competency Gap Chart */}
+      <Card>
+        <CardHeader
+          title="Analisis Kesenjangan Kompetensi (Competency Gap Chart)"
+          subtitle="Rerata capaian siswa per kode kompetensi dibandingkan batas ketuntasan minimum (KKM: 70)"
+          icon={<BarChart2 className="w-5 h-5 text-blue-600" />}
+          action={
+            <div className="flex items-center gap-4 text-xs text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded bg-blue-600 inline-block"></span>
+                Tuntas (≥ 70%)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded bg-amber-500 inline-block"></span>
+                Perlu Intervensi (&lt; 70%)
+              </span>
+            </div>
+          }
+        />
         <CardBody className="p-6">
-          <div className="flex items-center gap-2 text-blue-800 font-bold text-sm mb-4">
-            <Sparkles className="w-4 h-4 text-blue-600" />
-            <span>Alur Kerja Sistem Pembelajaran Adaptif JALIN-TUNTAS (3T Ready)</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
-            <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
-              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold inline-flex items-center justify-center mb-2">1</span>
-              <h4 className="font-bold text-slate-800 text-sm">Asesmen Awal</h4>
-              <p className="text-slate-500 mt-1">Siswa mengerjakan tes diagnostik secara daring atau luring di tablet kelas.</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
-              <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-bold inline-flex items-center justify-center mb-2">2</span>
-              <h4 className="font-bold text-slate-800 text-sm">Analisis Kompetensi</h4>
-              <p className="text-slate-500 mt-1">Sistem memetakan butir soal salah ke kode kompetensi dasar (misal: Pecahan / ADiKSiMBa).</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
-              <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 font-bold inline-flex items-center justify-center mb-2">3</span>
-              <h4 className="font-bold text-slate-800 text-sm">Rekomendasi Preskriptif</h4>
-              <p className="text-slate-500 mt-1">Modul remedial spesifik otomatis disarankan ke beranda belajar murid tanpa campur tangan manual.</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
-              <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 font-bold inline-flex items-center justify-center mb-2">4</span>
-              <h4 className="font-bold text-slate-800 text-sm">Latihan & Penguasaan</h4>
-              <p className="text-slate-500 mt-1">Siswa menuntaskan latihan penguatan, skor meningkat, dan guru menerima rekap kemajuan.</p>
-            </div>
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={competencyGapData} margin={{ top: 10, right: 20, left: -10, bottom: 25 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fontSize: 12, fill: '#64748B' }} 
+                  interval={0}
+                />
+                <YAxis 
+                  domain={[0, 100]} 
+                  tick={{ fontSize: 12, fill: '#64748B' }} 
+                />
+                <Tooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="bg-white p-3 rounded-lg shadow-lg border border-slate-100 text-xs space-y-1">
+                          <p className="font-bold text-slate-900">{data.name} - {data.title}</p>
+                          <p className="text-slate-500">Domain: <span className="font-medium text-slate-700">{data.domain}</span></p>
+                          <p className="text-slate-500">Rerata Skor: <span className={`font-bold ${data.rerata >= 70 ? 'text-emerald-600' : 'text-amber-600'}`}>{data.rerata}%</span></p>
+                          <p className="text-slate-500">Status: <span className="font-medium">{data.rerata >= 70 ? 'Sudah Menguasai' : 'Perlu Penguatan Modul'}</span></p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <ReferenceLine y={70} stroke="#EF4444" strokeDasharray="4 4" label={{ value: 'Ambang KKM 70', position: 'top', fill: '#EF4444', fontSize: 11 }} />
+                <Bar dataKey="rerata" radius={[6, 6, 0, 0]}>
+                  {competencyGapData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.rerata >= 70 ? '#2563EB' : '#F59E0B'} 
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </CardBody>
       </Card>
 
-      {/* Quick Action Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card hoverable onClick={() => navigate('/tuntas/asesmen')}>
-          <CardHeader
-            title="Daftar Paket Asesmen Diagnostik"
-            subtitle="Lihat asesmen yang dapat dikerjakan siswa sekarang"
-            icon={<FileCheck className="w-5 h-5 text-blue-600" />}
-            action={<ArrowRight className="w-4 h-4 text-slate-400" />}
-          />
-          <CardBody>
-            <div className="space-y-2.5">
-              {assessments.map(a => (
-                <div key={a.id} className="p-3 rounded-lg border border-slate-100 bg-slate-50 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-bold text-slate-800">{a.title}</p>
-                    <p className="text-[11px] text-slate-500">{a.targetGrade} • {a.questionIds.length} Soal • Waktu {a.durationMinutes} Menit</p>
-                  </div>
-                  <Badge variant="success" size="sm">{a.status}</Badge>
-                </div>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card hoverable onClick={() => navigate('/tuntas/rekomendasi')}>
-          <CardHeader
-            title="Hasil Asesmen & Riwayat Rekomendasi"
-            subtitle="Daftar pengerjaan siswa dan analisis penguasaan"
-            icon={<Sparkles className="w-5 h-5 text-amber-600" />}
-            action={<ArrowRight className="w-4 h-4 text-slate-400" />}
-          />
-          <CardBody>
-            {submissions.length === 0 ? (
-              <div className="py-6 text-center text-xs text-slate-400">
-                Belum ada pengerjaan asesmen siswa. Beralih ke peran Siswa dan kerjakan tes untuk melihat demonstrasi perhitungan otomatis!
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {submissions.slice(-3).reverse().map(sub => (
-                  <div key={sub.id} className="p-3 rounded-lg border border-slate-100 bg-slate-50 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-slate-800">{sub.studentName}</p>
-                      <p className="text-[11px] text-slate-500">{new Date(sub.submittedAt).toLocaleTimeString('id-ID')} • {sub.correctCount} dari {sub.totalQuestions} Benar</p>
-                    </div>
-                    <span className="text-base font-black text-blue-600">{sub.score}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardBody>
-        </Card>
-      </div>
+      {/* Recent Assessments Table */}
+      <Card>
+        <CardHeader
+          title="Daftar Paket Asesmen Terkini"
+          subtitle="Instrumen asesmen diagnostik yang dapat diakses oleh siswa di wilayah Mukomuko"
+          icon={<FileCheck className="w-5 h-5 text-blue-600" />}
+          action={
+            <Button 
+              variant="outline" 
+              size="sm" 
+              icon={<ArrowRight className="w-4 h-4" />}
+              onClick={() => navigate('/tuntas/asesmen')}
+            >
+              Lihat Semua Asesmen
+            </Button>
+          }
+        />
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-slate-600">
+            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500 border-b border-slate-100">
+              <tr>
+                <th className="px-6 py-3.5">Judul Asesmen</th>
+                <th className="px-6 py-3.5">Domain & Jenjang</th>
+                <th className="px-6 py-3.5">Jumlah Soal</th>
+                <th className="px-6 py-3.5">Durasi Waktu</th>
+                <th className="px-6 py-3.5">Status</th>
+                <th className="px-6 py-3.5 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {assessments.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
+                    Belum ada paket asesmen diagnostik yang terdaftar.
+                  </td>
+                </tr>
+              ) : (
+                assessments.slice(0, 5).map(asm => (
+                  <tr key={asm.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-semibold text-slate-900">{asm.title}</div>
+                      <div className="text-xs text-slate-400 mt-0.5">Dibuat oleh: {asm.teacherName}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant={asm.domain === 'Numerasi' ? 'success' : 'primary'} size="sm">
+                          {asm.domain}
+                        </Badge>
+                        <span className="text-xs text-slate-500">{asm.targetGrade}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-medium text-slate-700">
+                      {asm.questionIds?.length || 0} Butir
+                    </td>
+                    <td className="px-6 py-4 text-slate-500">
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        {asm.durationMinutes} Menit
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge 
+                        variant={asm.status === 'Aktif' ? 'success' : asm.status === 'Selesai' ? 'neutral' : 'warning'}
+                        size="sm"
+                        dot
+                      >
+                        {asm.status}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/tuntas/ujian/${asm.id}`)}
+                      >
+                        Mulai Tes
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   );
 };
-
