@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jalin-belajar-v1';
+const CACHE_NAME = 'jalin-belajar-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
